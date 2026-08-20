@@ -1,0 +1,34 @@
+minios-gui (1.1.0) unstable; urgency=medium
+
+  * Honor cancellation requested before CommandRunner finishes spawning the
+    child process instead of letting the newly started command continue.
+  * Add shared manager-state row sizing and active/running/available edge
+    semantics for consistent manager lists.
+  * Use a brighter green active/current row accent without changing success
+    banners and badges.
+  * Add reusable canonical HeaderBar and semantic StatusBanner helpers for
+    MiniOS GTK applications.
+  * Add shared compact module presentation metadata and byte formatting used by
+    Installer, Module Manager, and Image Builder UI.
+  * Standardize horizontal padding for text and icon+text buttons while keeping
+    icon-only HeaderBar and embedded ComboBox/SpinButton controls compact.
+  * Add TokenCompletionPopover for token-aware static or asynchronous completion
+    with an arrow anchored to the current entry token; Up/Down choose a result,
+    Tab or Enter accepts it, Escape closes the list, and Shift+Tab keeps normal
+    backward focus navigation.
+  * Add HelpPopoverButton for keyboard-accessible contextual help, supporting
+    compact field explanations and wider structured page-level guidance with
+    formatted Pango markup.
+  * Rely on gir1.2-gtk-3.0 for both Gtk and Gdk introspection data instead of
+    the nonexistent gir1.2-gdk-3.0 package.
+
+ -- crims0n <crims0n@minios.dev>  Wed, 19 Aug 2026 13:25:00 +0300
+
+minios-gui (1.0.0) bionic; urgency=medium
+
+  * Initial release: canonical MiniOS GUI stylesheet shared by all minios-*
+    GTK applications and driveutility.
+  * Build python3-minios-gui from the same source repository, providing
+    Python 3.6-compatible styling, icon, dialog and command helpers.
+
+ -- crims0n <crims0n@minios.dev>  Tue, 04 Aug 2026 20:29:55 +0300

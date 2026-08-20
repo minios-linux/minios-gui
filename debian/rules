@@ -1,0 +1,5 @@
+#!/usr/bin/make -f
+# Build the MiniOS shared GUI styling package with debhelper.
+
+%:
+	dh $@

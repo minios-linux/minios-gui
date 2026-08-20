@@ -1,0 +1,51 @@
+Source: minios-gui
+Section: x11
+Priority: optional
+Maintainer: crims0n <crims0n@minios.dev>
+Build-Depends: debhelper (>= 11),
+               python3 (>= 3.6),
+               python3-gi,
+               gir1.2-gtk-3.0
+Standards-Version: 4.6.2
+Homepage: https://minios.dev
+Rules-Requires-Root: no
+Vcs-Git: https://github.com/minios-linux/minios-gui.git
+Vcs-Browser: https://github.com/minios-linux/minios-gui
+
+Package: minios-gui
+Architecture: all
+Depends: ${misc:Depends}
+Recommends: elementary-minios-icon-theme
+Description: MiniOS shared GUI styling (canonical stylesheet)
+ Common look-and-feel resources shared by the MiniOS graphical applications —
+ minios-installer, minios-configurator, driveutility and the other minios-*
+ GTK tools.
+ .
+ It installs /usr/share/minios/minios.css, the canonical MiniOS application
+ stylesheet. Applications load this file on top of the active GTK theme to get
+ consistent header bar, sidebar, content card, button, banner, badge, list and
+ progress styling across the whole product. Surfaces derive from the running
+ theme, so both light and dark desktops are supported; only the primary action
+ and brand accents use the fixed MiniOS blue.
+ .
+ This package provides styling resources only. It does not modify the
+ applications, which adopt the stylesheet by loading it explicitly.
+
+Package: python3-minios-gui
+Section: python
+Architecture: all
+Depends: ${misc:Depends},
+         python3 (>= 3.6),
+         python3-gi,
+         gir1.2-gtk-3.0,
+         minios-gui (= ${binary:Version})
+Description: Python 3 helpers for MiniOS GTK applications
+ Shared Python 3.6-compatible GTK 3 helpers for MiniOS graphical applications.
+ The module provides canonical stylesheet loading, icon-theme resolution,
+ standard message and confirmation dialogs, reusable HeaderBar and semantic
+ status-banner widgets, compact module-presentation helpers, a read-only
+ streamed log view, background command execution and a cancellable command
+ dialog.
+ .
+ This binary package is built from the minios-gui source repository together
+ with the canonical MiniOS application stylesheet.

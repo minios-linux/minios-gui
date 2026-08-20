@@ -1,0 +1,489 @@
+/*
+ * minios.css — Canonical MiniOS GTK 3 application stylesheet
+ * =========================================================================
+ * Single source of truth for the MiniOS application visual language.
+ * Load this FIRST, then (optionally) an app-specific stylesheet for widgets
+ * that are unique to one program.
+ *
+ * Reference apps this style is distilled from:
+ *   - minios-installer     (wizard / multi-step workspace)
+ *   - minios-configurator  (category workspace)
+ *   - driveutility         (compact utility, header StackSwitcher)
+ *
+ * Rules of the road:
+ *   - Surfaces use THEME colors (@theme_bg_color, @theme_base_color,
+ *     @borders, @theme_fg_color) so light and dark desktops both work.
+ *   - Only the primary action and brand accents use the fixed MiniOS blue.
+ *   - GTK 3 CSS has NO custom properties (var()) and NO calc(); use the
+ *     @define-color tokens below and literal values.
+ *
+ * Copyright (C) 2026 MiniOS Linux — MIT/where applicable.
+ */
+
+/* =========================================================================
+ * 1. Design tokens (brand palette)
+ *
+ * These are the only hard-coded colors. Everything else derives from the
+ * running GTK theme. Values follow the elementary/Adwaita family that the
+ * elementary-xfce-minios icon theme is built on.
+ * ========================================================================= */
+@define-color minios_blue        #4a90d9;   /* primary accent            */
+@define-color minios_blue_light  #6bb5ff;   /* gradient top / hover      */
+@define-color minios_blue_dark   #3875c4;   /* borders / pressed         */
+@define-color minios_red         #c6262e;   /* destructive               */
+@define-color minios_red_light   #ed5353;   /* gradient top              */
+@define-color minios_red_dark    #c01c28;   /* border                    */
+@define-color minios_amber       #e5a50a;   /* warning                   */
+@define-color minios_green       #26a269;   /* success                   */
+@define-color minios_active_edge #73d216;   /* active/current row accent */
+
+/* =========================================================================
+ * 2. Window chrome — header bar
+ *
+ * Every window uses Gtk.HeaderBar(show_close_button=True) with the
+ * `minios-headerbar` class. Keep the bar compact and the title single-line.
+ * ========================================================================= */
+/* Keep the theme's native header height so titles, window controls AND a
+ * GtkStackSwitcher (utility archetype) all have room. We only add light
+ * horizontal padding — never force a short height (that squashes switchers). */
+headerbar.minios-headerbar {
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+/* =========================================================================
+ * 3. Navigation — left rail
+ *
+ * Two navigation archetypes share ONE surface class: `minios-sidebar`.
+ *   a) Category list   → a Gtk.ListBox of rows (configurator).
+ *   b) Wizard steps    → flat Gtk.Buttons with `.sidebar-step` (installer).
+ * Recommended width: 180 px.
+ * ========================================================================= */
+.minios-sidebar {
+    background-color: shade(@theme_bg_color, 0.97);
+    border-right: 1px solid alpha(@borders, 0.7);
+    padding: 4px 6px 4px 4px;
+}
+
+/* Category-list variant */
+.minios-sidebar row {
+    min-height: 32px;
+    padding: 0 8px;
+    border-radius: 4px;
+    margin: 1px 0;
+}
+
+.minios-sidebar row:selected,
+.minios-sidebar row:selected:hover {
+    background: linear-gradient(to bottom, #6bb5ff, #4a90d9);
+    color: #ffffff;
+}
+
+.minios-sidebar row:selected label {
+    color: #ffffff;
+}
+
+/* Wizard-step variant: a flat button that looks like a nav item */
+.sidebar-step {
+    min-height: 32px;
+    padding: 0 8px;
+    margin: 1px 0;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sidebar-step:hover {
+    background-color: alpha(@theme_fg_color, 0.05);
+}
+
+.sidebar-step-active,
+.sidebar-step-active:hover {
+    background: linear-gradient(to bottom, #6bb5ff, #4a90d9);
+    border-left: 3px solid #3875c4;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.sidebar-step-active label,
+.sidebar-step-active image {
+    color: #ffffff;
+}
+
+.sidebar-step-done {
+    opacity: 0.85;
+}
+
+.sidebar-step-todo {
+    opacity: 0.55;
+}
+
+/* =========================================================================
+ * 4. Typography helpers
+ * ========================================================================= */
+.page-title {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.page-subtitle {
+    opacity: 0.72;
+    margin-bottom: 4px;
+}
+
+.section-title {
+    font-size: 15px;
+    font-weight: bold;
+    margin-top: 8px;
+    margin-bottom: 2px;
+}
+
+.dim-label,
+.field-description,
+.availability-note {
+    opacity: 0.72;
+}
+
+.field-description,
+.availability-note {
+    font-size: smaller;
+}
+
+.command-line,
+.monospace {
+    font-family: monospace;
+    font-size: smaller;
+    opacity: 0.75;
+}
+
+/* Inline field help icon (the "i"/"?" next to a label). Use a symbolic icon at
+ * Gtk.IconSize.MENU so it looks identical and sits in the same place in every
+ * app. */
+.field-help-icon {
+    opacity: 0.7;
+    margin: 0 2px;
+}
+
+/* =========================================================================
+ * 5. Content cards
+ *
+ * A card groups related controls on the window background. It NEVER uses the
+ * entry-white @theme_base_color as a solid fill (white-on-gray looks wrong);
+ * it stays transparent and is defined by its border.
+ * ========================================================================= */
+.content-card {
+    border: 1px solid alpha(@borders, 0.65);
+    border-radius: 6px;
+    background-color: transparent;
+    padding: 8px;
+    margin: 10px;
+}
+
+/* Selectable card (radio-like choice) */
+.choice-card {
+    border: 2px solid alpha(@borders, 0.65);   /* fixed width: selection must not reflow */
+    border-radius: 6px;
+    background-color: transparent;
+    padding: 6px;
+    margin: 2px 0;
+}
+
+.choice-card:hover {
+    background-color: alpha(@theme_fg_color, 0.05);
+}
+
+.choice-card-selected,
+.choice-card-selected:hover,
+.minios-choice:checked {
+    border: 2px solid #3875c4;
+    background: linear-gradient(to bottom, #6bb5ff, #4a90d9);
+    color: #ffffff;
+}
+
+.choice-card-selected label,
+.choice-card-selected image,
+.minios-choice:checked label,
+.minios-choice:checked image {
+    color: #ffffff;
+}
+
+/* Framed group (GtkFrame) — one border + radius for every app. */
+frame {
+    border: 1px solid alpha(@borders, 0.65);
+    border-radius: 6px;
+}
+
+frame > border {
+    border: none;
+}
+
+frame > label {
+    font-weight: bold;
+    margin: 2px 4px;
+}
+
+/* =========================================================================
+ * 6. Status banners
+ *
+ * One family, four intents. Left border + tinted wash. Put an icon on the
+ * left and a wrapping label on the right.
+ * ========================================================================= */
+.info-banner,
+.warning-banner,
+.error-banner,
+.success-banner {
+    border-radius: 4px;
+    border-style: solid;
+    border-width: 1px;
+    padding: 8px 10px;
+}
+
+.info-banner {
+    background-color: alpha(@minios_blue, 0.12);
+    border-color: alpha(@minios_blue, 0.45);
+}
+
+.warning-banner {
+    background-color: alpha(@minios_amber, 0.18);
+    border-color: alpha(@minios_amber, 0.55);
+}
+
+.error-banner {
+    background-color: alpha(@minios_red, 0.14);
+    border-color: alpha(@minios_red, 0.50);
+}
+
+.success-banner {
+    background-color: alpha(@minios_green, 0.14);
+    border-color: alpha(@minios_green, 0.48);
+}
+
+/* Inline severity text */
+.inline-error   { color: @minios_red;   font-size: smaller; }
+.inline-warning { color: @minios_amber; font-size: smaller; }
+
+/* =========================================================================
+ * 7. Buttons
+ *
+ * Buttons stay theme-native so MiniOS matches classic desktop applications.
+ * Ordinary, HeaderBar, ComboBox and SpinButton buttons keep the GTK theme's
+ * own metrics and colors across GTK 3.22-3.24.
+ *
+ * The `suggested-action` and `destructive-action` classes are kept purely as
+ * SEMANTIC hints: the active GTK theme renders its own native primary and
+ * destructive appearance. We intentionally do NOT force a MiniOS-blue gradient
+ * or fixed button sizes here, so a primary button looks like a normal themed
+ * button (e.g. XFCE/Greybird) rather than a branded control.
+ * ========================================================================= */
+
+/* Text buttons keep theme-native height/colors but must not glue labels to
+ * their edges. Gtk.Button adds .text-button automatically for label-only
+ * buttons. Applications add .minios-text-button to icon+text buttons because
+ * GTK does not classify those as text buttons. */
+button.text-button,
+.minios-text-button {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* Emphasized/footer actions get a little more room. */
+button.suggested-action,
+button.destructive-action,
+.minios-footer button,
+.action-bar button {
+    min-width: 84px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+/* =========================================================================
+ * 8. Badges (status pills)
+ *
+ * Classic XFCE-style status badges: compact gradients, a defined edge and
+ * white text so they remain readable on selected rows.
+ * ========================================================================= */
+.badge {
+    min-width: 60px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    border: 1px solid #888a85;
+    background: linear-gradient(to bottom, #d3d7cf, #babdb6);
+    color: #2e3436;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-accent {
+    background: linear-gradient(to bottom, #6bb5ff, #4a90d9);
+    border-color: #3875c4;
+    color: #ffffff;
+    text-shadow: 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.badge-success {
+    background: linear-gradient(to bottom, #8ae234, #4e9a06);
+    border-color: #3a7304;
+    color: #ffffff;
+    text-shadow: 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.badge-warning {
+    background: linear-gradient(to bottom, #fcaf3e, #f57900);
+    border-color: #ce5c00;
+    color: #ffffff;
+    text-shadow: 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.badge-error {
+    background: linear-gradient(to bottom, #ed5353, #c6262e);
+    border-color: #a10705;
+    color: #ffffff;
+    text-shadow: 0 1px rgba(0, 0, 0, 0.2);
+}
+
+/* =========================================================================
+ * 9. Lists
+ *
+ * Rows follow the THEME selection color (never a hard-coded blue fill), so
+ * selected text stays legible on every theme.
+ * ========================================================================= */
+.minios-list {
+    background-color: @theme_base_color;
+    border: 1px solid alpha(@borders, 0.7);
+    border-radius: 6px;
+}
+
+.minios-list row {
+    padding: 8px 10px;
+    border-bottom: 1px solid alpha(@borders, 0.35);
+}
+
+.minios-list row:last-child {
+    border-bottom: none;
+}
+
+.minios-list row:hover {
+    background-color: alpha(@theme_fg_color, 0.06);
+}
+
+.minios-list row:selected,
+.minios-selectable row:selected {
+    background: linear-gradient(to bottom, #6bb5ff, #4a90d9);
+    color: #ffffff;
+}
+
+.minios-list row:selected:hover,
+.minios-selectable row:selected:hover {
+    background: linear-gradient(to bottom, #7fc3ff, #5ba0e9);
+    color: #ffffff;
+}
+
+.minios-list row:selected label,
+.minios-selectable row:selected label {
+    color: #ffffff;
+}
+
+/* Left-edge status accents for list rows (running / active / available). */
+.row-status-active    { border-left: 3px solid @minios_active_edge; }
+.row-status-running   { border-left: 3px solid @minios_amber; }
+.row-status-available { border-left: 3px solid alpha(@theme_fg_color, 0.25); }
+
+/* Shared content metrics for state rows in manager applications. */
+.manager-state-row-content {
+    padding: 12px 16px;
+    min-height: 80px;
+}
+
+.row-title { font-weight: 600; }
+.row-subtitle,
+.row-meta { opacity: 0.6; font-size: smaller; }
+
+/* =========================================================================
+ * 10. Entries & validation
+ * ========================================================================= */
+/* Entry/combo/spin heights stay theme-native (classic desktop sizing); we do
+ * not force a taller control height here. */
+
+entry.error {
+    border: 2px solid @minios_red;
+}
+
+/* Field changed from its saved value */
+.changed {
+    border: 2px solid alpha(@theme_selected_bg_color, 0.85);
+    box-shadow: 0 0 0 1px alpha(@theme_selected_bg_color, 0.18);
+}
+
+/* =========================================================================
+ * 11. Progress
+ * ========================================================================= */
+progressbar trough,
+progressbar progress {
+    min-height: 12px;
+    border-radius: 6px;
+}
+
+/* =========================================================================
+ * 12. Footer / action bar
+ *
+ * A window-wide bar that hosts the primary action. The primary button sits
+ * bottom-right; secondary/Back actions sit to its left.
+ * ========================================================================= */
+.minios-footer,
+.action-bar {
+    border-top: 1px solid alpha(@borders, 0.7);
+    background-color: shade(@theme_bg_color, 0.98);
+    padding: 8px 12px;
+}
+
+/* Footer buttons stay theme-native; only the container is styled. */
+
+/* Thin separator used above an in-page navigation row (Back / Next). */
+.nav-separator {
+    margin-top: 8px;
+    margin-bottom: 4px;
+    opacity: 0.5;
+}
+
+/* =========================================================================
+ * 13. Terminal-style log view
+ *
+ * Read-only, monospace output for streamed command runs.
+ * ========================================================================= */
+.log-view,
+.log-view text {
+    font-family: monospace;
+    font-size: 11px;
+    color: @theme_text_color;
+    background-color: shade(@theme_base_color, 0.96);
+}
+
+.terminal-frame {
+    border: 1px solid alpha(@borders, 0.85);
+    border-radius: 4px;
+    background-color: black;
+}
+
+/* =========================================================================
+ * 14. Drop zone (drag & drop targets)
+ * ========================================================================= */
+.drop-zone {
+    border: 2px dashed alpha(@borders, 0.85);
+    border-radius: 8px;
+    background-color: alpha(@theme_base_color, 0.45);
+}
+
+.drop-zone:hover {
+    border-color: @theme_selected_bg_color;
+    background-color: alpha(@theme_selected_bg_color, 0.08);
+}
+
+/* =========================================================================
+ * 15. Empty states
+ * ========================================================================= */
+.empty-state       { opacity: 0.6; }
+.empty-state-title { font-weight: 600; opacity: 0.75; }

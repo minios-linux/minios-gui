@@ -1,0 +1,10 @@
+debian/.debhelper/
+debian/minios-gui/
+debian/files
+debian/debhelper-build-stamp
+debian/*.substvars
+debian/*.log
+debian/python3-minios-gui/
+.pytest_cache/
+__pycache__/
+*.pyc
