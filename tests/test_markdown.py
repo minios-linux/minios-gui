@@ -29,6 +29,15 @@ class MarkdownTests(unittest.TestCase):
         self.assertIn("'quote'", rendered)
         self.assertIn("'table'", rendered)
 
+    def test_fenced_code_without_language_renders_safely(self):
+        nodes = parse_markdown("```\necho hello\n```\n")
+        self.assertEqual(nodes[0][0], "code_block")
+        view = MarkdownTextView("```\necho hello\n```\n")
+        text = view.get_buffer().get_text(
+            view.get_buffer().get_start_iter(),
+            view.get_buffer().get_end_iter(), True)
+        self.assertIn("echo hello", text)
+
     def test_raw_html_is_plain_text(self):
         nodes = parse_markdown("<script>alert('no')</script>")
 

@@ -414,7 +414,8 @@ class MarkdownTextView(Gtk.TextView):
                     node[2], tag_names + (node[1],), list_depth)
                 self._insert("\n\n")
             elif kind == "code_block":
-                language = (node[2] or "").strip().split(None, 1)[0]
+                info = (node[2] or "").strip()
+                language = info.split(None, 1)[0] if info else ""
                 if language.lower() == "mermaid" and self.render_mermaid:
                     if self._render_mermaid(node[1]):
                         continue
