@@ -56,7 +56,13 @@ The `minios_gui` Python package provides:
   completion, anchored visually to the word being completed; arrows choose a
   result and Tab/Enter accept it while Shift+Tab keeps normal focus navigation;
 - `HelpPopoverButton` for keyboard-accessible contextual help, from compact
-  field explanations to structured page-level guidance with titled sections;
+  field explanations to structured page-level guidance with titled sections or
+  native Markdown content;
+- `MarkdownTextView`, `parse_markdown()` and `load_localized_markdown()` for
+  safe native Markdown help without WebKit, including locale fallback, internal
+  link callbacks, heading anchors and a non-executable safe HTML subset;
+- `MermaidDiagram` and `parse_mermaid_flowchart()` for optional native Mermaid
+  flowcharts without JavaScript; unsupported Mermaid remains readable source;
 - `LogView`, `CommandRunner` and `CommandDialog` for responsive, cancellable,
   streamed command execution outside the GTK main loop.
 
@@ -78,9 +84,32 @@ An application that only loads the stylesheet depends on `minios-gui`. An app
 that imports `minios_gui` depends on `python3-minios-gui` (which in turn depends
 on the matching `minios-gui` binary version).
 
+Localized Markdown help uses an application-owned document tree:
+
+```python
+from minios_gui import HelpPopoverButton, load_localized_markdown
+
+help_text = load_localized_markdown(
+    "/usr/share/example-app/help", "settings/storage.md")
+help_button = HelpPopoverButton(
+    "Storage", markdown=help_text, compact=True)
+```
+
+The Markdown document should begin with its own level-one heading. The `title`
+argument remains the button's accessible name and fallback tooltip; it is not
+duplicated above Markdown content.
+
+The loader tries `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, and `LANG` in order, then
+falls back from a full locale to its language and finally to English. Use
+`MarkdownTextView` directly when help belongs in a dialog or permanent page
+instead of a popover. Applications that need diagrams can pass
+`render_mermaid=True` to `MarkdownTextView` or `HelpPopoverButton`. The Mermaid
+renderer executes no script or HTML; it supports native flowcharts and falls
+back to the fenced source when syntax is unsupported.
+
 ## Build
 
-Standard Debian packaging (`debhelper` compat 13):
+Standard Debian packaging (`debhelper` compat 11):
 
 ```sh
 dpkg-buildpackage -us -uc -b
@@ -99,6 +128,7 @@ The build produces `minios-gui_<version>_all.deb` and
 
 - Python 3.6 and later;
 - GTK 3.22 and later;
+- Mistune 0.8, 2.x, and 3.x;
 - Debian 10–13 and later, equivalent Devuan releases, Ubuntu 18.04–26.04 and
   later.
 

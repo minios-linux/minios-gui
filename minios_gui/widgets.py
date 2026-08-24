@@ -5,6 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+from .markdown import MarkdownTextView
 from .style import new_icon, resolve_icon
 
 
@@ -79,7 +80,8 @@ class HelpPopoverButton(Gtk.Button):
     """Context-help button with structured, keyboard-accessible popover text."""
 
     def __init__(self, title, summary="", sections=(), label=None,
-                 tooltip=None, compact=False, markup=False, width=None):
+                 tooltip=None, compact=False, markup=False, width=None,
+                 markdown=None, render_mermaid=False):
         Gtk.Button.__init__(self)
         self.set_focus_on_click(False)
         self.get_style_context().add_class("minios-help-button")
@@ -114,26 +116,39 @@ class HelpPopoverButton(Gtk.Button):
             scrolled.set_max_content_height(420)
         if hasattr(scrolled, "set_propagate_natural_height"):
             scrolled.set_propagate_natural_height(True)
-        body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        body.set_margin_top(12)
-        body.set_margin_bottom(12)
-        body.set_margin_start(12)
-        body.set_margin_end(12)
-
-        heading = Gtk.Label(label=title, xalign=0)
-        heading.get_style_context().add_class("section-title")
-        body.pack_start(heading, False, False, 0)
-        if summary:
-            body.pack_start(
-                self._help_label(summary, markup=markup), False, False, 0)
-        for section_title, section_text in sections:
-            section_heading = Gtk.Label(label=section_title, xalign=0)
-            section_heading.get_style_context().add_class("row-title")
-            body.pack_start(section_heading, False, False, 2)
-            body.pack_start(
-                self._help_label(section_text, markup=markup), False, False, 0)
-        scrolled.add(body)
+        if markdown is not None:
+            markdown_view = MarkdownTextView(
+                markdown, render_mermaid=render_mermaid)
+            markdown_view.set_left_margin(16)
+            markdown_view.set_right_margin(16)
+            markdown_view.set_top_margin(12)
+            markdown_view.set_bottom_margin(12)
+            markdown_view.set_hexpand(True)
+            markdown_view.set_vexpand(True)
+            scrolled.add(markdown_view)
+            self.markdown_view = markdown_view
+        else:
+            body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+            body.set_margin_top(12)
+            body.set_margin_bottom(12)
+            body.set_margin_start(12)
+            body.set_margin_end(12)
+            heading = Gtk.Label(label=title, xalign=0)
+            heading.get_style_context().add_class("minios-help-title")
+            body.pack_start(heading, False, False, 0)
+            self.help_heading = heading
+            if summary:
+                body.pack_start(
+                    self._help_label(summary, markup=markup), False, False, 0)
+            for section_title, section_text in sections:
+                section_heading = Gtk.Label(label=section_title, xalign=0)
+                section_heading.get_style_context().add_class("row-title")
+                body.pack_start(section_heading, False, False, 2)
+                body.pack_start(
+                    self._help_label(section_text, markup=markup), False, False, 0)
+            scrolled.add(body)
         popover.add(scrolled)
+        self.help_scrolled = scrolled
         self.help_popover = popover
         self.connect("clicked", self._toggle_help)
 

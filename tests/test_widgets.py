@@ -56,6 +56,8 @@ class WidgetTests(unittest.TestCase):
         self.assertGreaterEqual(minimum, 600)
         self.assertTrue(
             button.get_style_context().has_class("minios-help-button"))
+        self.assertTrue(button.help_heading.get_style_context().has_class(
+            "minios-help-title"))
         self.assertEqual(button.get_tooltip_text(), "Packages")
         window.destroy()
 
@@ -64,6 +66,40 @@ class WidgetTests(unittest.TestCase):
             "Filesystem", "<b>ext4</b> is recommended.",
             compact=True, markup=True)
         self.assertIsNotNone(button.help_popover)
+
+    def test_help_popover_accepts_markdown(self):
+        button = HelpPopoverButton(
+            "Filesystem", compact=True,
+            markdown="# Filesystem\n\nUse **ext4** or `perchmode=squashfs`.")
+        self.assertIsNotNone(button.help_popover)
+        self.assertIsNotNone(button.markdown_view)
+        self.assertFalse(hasattr(button, "help_heading"))
+        self.assertIs(button.markdown_view.get_parent(), button.help_scrolled)
+        tags = button.markdown_view.get_buffer().get_tag_table()
+        self.assertGreater(
+            tags.lookup("heading1").props.scale,
+            tags.lookup("heading2").props.scale)
+        self.assertGreater(
+            tags.lookup("heading2").props.scale,
+            tags.lookup("heading3").props.scale)
+
+    def test_markdown_scroll_range_ends_with_document(self):
+        window = Gtk.Window()
+        markdown = "# Help\n\n" + "\n\n".join(
+            "Paragraph {} with enough text to wrap onto another line.".format(i)
+            for i in range(40))
+        button = HelpPopoverButton("Help", markdown=markdown)
+        window.add(button)
+        window.show_all()
+        button.clicked()
+        while Gtk.events_pending():
+            Gtk.main_iteration_do(False)
+
+        view = button.markdown_view
+        end_rect = view.get_iter_location(view.get_buffer().get_end_iter())
+        upper = button.help_scrolled.get_vadjustment().get_upper()
+        self.assertLessEqual(upper - end_rect.y - end_rect.height, 32)
+        window.destroy()
 
 
 if __name__ == "__main__":

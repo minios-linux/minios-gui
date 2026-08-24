@@ -23,6 +23,11 @@ def test_text_buttons_have_shared_horizontal_padding():
     assert "padding-right: 14px;" in CSS
 
 
+def test_help_title_is_larger_than_section_titles():
+    assert css_declarations(".minios-help-title")["font-size"] == "20px"
+    assert css_declarations(".section-title")["font-size"] == "15px"
+
+
 def test_manager_state_row_content_css_contract():
     declarations = css_declarations(".manager-state-row-content")
 

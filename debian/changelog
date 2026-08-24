@@ -1,3 +1,23 @@
+minios-gui (1.2.0) unstable; urgency=medium
+
+  * Add native Markdown help rendering with Mistune and Gtk.TextBuffer.
+  * Add safe localized Markdown loading with language and English fallback.
+  * Let HelpPopoverButton display selectable Markdown content without WebKit.
+  * Support the legacy Mistune 0.8 renderer API and the AST APIs in Mistune 2
+    and 3 so the shared widget also works on newer MiniOS releases.
+  * Add reusable internal-link callbacks, Unicode heading anchors and safe
+    handling of br, kbd, strong and em inline HTML used in local help.
+  * Add optional native Mermaid flowchart rendering without WebKit, JavaScript
+    or command execution, with source-code fallback for unsupported syntax.
+  * Keep popover titles visually above Markdown headings in the help hierarchy.
+  * Treat the level-one Markdown heading as the document title instead of
+    duplicating it with a separate GTK label.
+  * Put Markdown views directly in their scroller to avoid an empty page below
+    the article when the reader reaches the end.
+  * Run the complete GTK and CSS test suite under Xvfb during package builds.
+
+ -- crims0n <crims0n@minios.dev>  Mon, 24 Aug 2026 15:00:00 +0300
+
 minios-gui (1.1.0) unstable; urgency=medium
 
   * Honor cancellation requested before CommandRunner finishes spawning the
