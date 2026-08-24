@@ -9,6 +9,8 @@ minios-gui (1.2.0) unstable; urgency=medium
     handling of br, kbd, strong and em inline HTML used in local help.
   * Add optional native Mermaid flowchart rendering without WebKit, JavaScript
     or command execution, with source-code fallback for unsupported syntax.
+  * Render nested Markdown lists on distinct indented lines and safely handle
+    fenced code blocks that omit a language identifier.
   * Keep popover titles visually above Markdown headings in the help hierarchy.
   * Treat the level-one Markdown heading as the document title instead of
     duplicating it with a separate GTK label.

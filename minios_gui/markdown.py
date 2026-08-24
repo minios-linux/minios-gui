@@ -424,6 +424,9 @@ class MarkdownTextView(Gtk.TextView):
                 self._insert(node[1], tag_names + ("code_block",))
                 self._insert("\n\n")
             elif kind == "list":
+                end = self.get_buffer().get_end_iter()
+                if list_depth > 0 and not end.starts_line():
+                    self._insert("\n")
                 self._render_list(node[2], node[1], list_depth)
                 if list_depth == 0:
                     self._insert("\n")

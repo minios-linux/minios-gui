@@ -18,6 +18,15 @@ class MarkdownTests(unittest.TestCase):
         self.assertTrue(any(node[0] == "list" for node in nodes))
         self.assertNotIn("<h2>", repr(nodes))
 
+    def test_nested_lists_start_on_their_own_indented_lines(self):
+        view = MarkdownTextView(
+            "1. one\n2. two\n   - nested a\n   - nested b\n")
+        buffer_ = view.get_buffer()
+        text = buffer_.get_text(
+            buffer_.get_start_iter(), buffer_.get_end_iter(), True)
+        self.assertIn("1. one\n2. two\n  - nested a\n  - nested b", text)
+        self.assertNotIn("two  - nested", text)
+
     def test_parser_normalizes_code_links_quotes_and_tables(self):
         nodes = parse_markdown(
             "Text `code` and [link](https://minios.dev).\n\n"
@@ -37,6 +46,53 @@ class MarkdownTests(unittest.TestCase):
             view.get_buffer().get_start_iter(),
             view.get_buffer().get_end_iter(), True)
         self.assertIn("echo hello", text)
+
+    def test_safe_inline_html_is_converted_to_native_formatting(self):
+        nodes = parse_markdown(
+            "A<br>B <kbd>Esc</kbd> <strong>bold</strong> <em>italic</em>")
+        rendered = repr(nodes)
+        self.assertIn("'code'", rendered)
+        self.assertIn("'strong'", rendered)
+        self.assertIn("'emphasis'", rendered)
+        view = MarkdownTextView(
+            "A<br>B <kbd>Esc</kbd> <strong>bold</strong> <em>italic</em>")
+        buffer_ = view.get_buffer()
+        text = buffer_.get_text(
+            buffer_.get_start_iter(), buffer_.get_end_iter(), True)
+        self.assertIn("A\nB Esc bold italic", text)
+
+    def test_headings_expose_unicode_anchors_and_ascii_aliases(self):
+        view = MarkdownTextView("# Café Storage\n\n## Details\n")
+        self.assertEqual(
+            view.get_headings(),
+            [(1, "Café Storage", "café-storage"), (2, "Details", "details")])
+        self.assertTrue(view.scroll_to_anchor("#café-storage"))
+        self.assertTrue(view.scroll_to_anchor("cafe-storage"))
+        self.assertFalse(view.scroll_to_anchor("missing"))
+
+    def test_internal_links_require_opt_in_and_use_callback(self):
+        seen = []
+        plain = MarkdownTextView("[Local](./page.md#part)")
+        self.assertIsNone(plain._safe_uri("./page.md#part"))
+        view = MarkdownTextView(
+            "[Local](./page.md#part)",
+            allow_internal_links=True,
+            link_handler=lambda uri: seen.append(uri) or True)
+        self.assertEqual(view._safe_uri("./page.md#part"), "./page.md#part")
+        self.assertTrue(view._activate_uri("./page.md#part"))
+        self.assertEqual(seen, ["./page.md#part"])
+        for uri in ("file:///etc/passwd", "data:text/plain,x",
+                    "javascript:alert(1)", "ftp://example.test"):
+            self.assertIsNone(view._safe_uri(uri))
+
+    def test_breaks_and_tables_render_as_readable_native_text(self):
+        view = MarkdownTextView(
+            "first\nsecond  \nthird\n\n| A | B |\n| - | - |\n| x | y |\n")
+        buffer_ = view.get_buffer()
+        text = buffer_.get_text(
+            buffer_.get_start_iter(), buffer_.get_end_iter(), True)
+        self.assertIn("first\nsecond\nthird", text)
+        self.assertIn("A | B\nx | y", text)
 
     def test_raw_html_is_plain_text(self):
         nodes = parse_markdown("<script>alert('no')</script>")
