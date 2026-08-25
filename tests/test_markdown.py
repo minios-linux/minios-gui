@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from gi.repository import Gdk
+
 from minios_gui.markdown import MarkdownTextView, load_localized_markdown, parse_markdown
 from minios_gui.mermaid import MermaidDiagram, MermaidParseError, parse_mermaid_flowchart
 
@@ -84,6 +86,20 @@ class MarkdownTests(unittest.TestCase):
         for uri in ("file:///etc/passwd", "data:text/plain,x",
                     "javascript:alert(1)", "ftp://example.test"):
             self.assertIsNone(view._safe_uri(uri))
+
+    def test_mouse_release_on_link_activates_callback(self):
+        seen = []
+        view = MarkdownTextView(
+            "[Local](./page.md#part)",
+            allow_internal_links=True,
+            link_handler=lambda uri: seen.append(uri) or True)
+        link_tag = next(tag for tag, uri in view._link_uris.items()
+                        if uri == "./page.md#part")
+        event = Gdk.Event.new(Gdk.EventType.BUTTON_RELEASE)
+        event.button.button = Gdk.BUTTON_PRIMARY
+        self.assertTrue(link_tag.event(
+            view, event, view.get_buffer().get_start_iter()))
+        self.assertEqual(seen, ["./page.md#part"])
 
     def test_breaks_and_tables_render_as_readable_native_text(self):
         view = MarkdownTextView(

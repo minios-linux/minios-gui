@@ -16,6 +16,7 @@ minios-gui (1.2.0) unstable; urgency=medium
     duplicating it with a separate GTK label.
   * Put Markdown views directly in their scroller to avoid an empty page below
     the article when the reader reaches the end.
+  * Fix primary-button activation of rendered Markdown links under PyGObject.
   * Run the complete GTK and CSS test suite under Xvfb during package builds.
 
  -- crims0n <crims0n@minios.dev>  Mon, 24 Aug 2026 15:00:00 +0300

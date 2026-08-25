@@ -559,8 +559,10 @@ class MarkdownTextView(Gtk.TextView):
         return "".join(values).strip()
 
     def _on_link_event(self, _tag, _object, event, _iter, uri):
-        if (event.type == Gdk.EventType.BUTTON_RELEASE and
-                event.button == Gdk.BUTTON_PRIMARY):
+        if event.type != Gdk.EventType.BUTTON_RELEASE:
+            return False
+        has_button, button = event.get_button()
+        if has_button and button == Gdk.BUTTON_PRIMARY:
             return self._activate_uri(uri)
         return False
 
