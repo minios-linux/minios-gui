@@ -9,8 +9,7 @@ STYLE    = share/minios.css
 PYTHONDIR = usr/lib/python3/dist-packages/minios_gui
 PYTHONFILES = minios_gui/__init__.py minios_gui/style.py \
 	minios_gui/dialogs.py minios_gui/command.py minios_gui/widgets.py \
-	minios_gui/module_display.py minios_gui/completion.py minios_gui/markdown.py \
-	minios_gui/mermaid.py
+	minios_gui/module_display.py minios_gui/completion.py minios_gui/document.py
 
 .PHONY: build test install uninstall clean
 

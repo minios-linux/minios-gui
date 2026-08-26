@@ -407,8 +407,8 @@ button.destructive-action,
 
 .row-title { font-weight: 600; }
 
-.minios-markdown-view,
-.minios-markdown-view text {
+.minios-document-view,
+.minios-document-view text {
     background-color: transparent;
 }
 .row-subtitle,
@@ -499,3 +499,14 @@ progressbar progress {
  * ========================================================================= */
 .empty-state       { opacity: 0.6; }
 .empty-state-title { font-weight: 600; opacity: 0.75; }
+
+/* Precompiled help code blocks: VitePress-compatible block backgrounds. */
+.minios-document-code-block-light {
+    background-color: #f6f6f7;
+    border-radius: 8px;
+}
+
+.minios-document-code-block-dark {
+    background-color: #161618;
+    border-radius: 8px;
+}

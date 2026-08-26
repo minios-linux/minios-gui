@@ -1,0 +1,20 @@
+{
+  "name": "minios-help-build-tools",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@mdit/plugin-alert": "0.23.2",
+    "@mdit/plugin-dl": "0.23.2",
+    "@mdit/plugin-footnote": "0.23.2",
+    "@mdit/plugin-sub": "0.24.2",
+    "@mdit/plugin-sup": "0.24.2",
+    "@mdit/plugin-tasklist": "0.23.2",
+    "@mermaid-js/mermaid-cli": "11.16.0",
+    "markdown-it": "14.1.0",
+    "markdown-it-admon": "1.0.1",
+    "shiki": "2.5.0"
+  }
+}

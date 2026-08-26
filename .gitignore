@@ -8,3 +8,5 @@ debian/python3-minios-gui/
 .pytest_cache/
 __pycache__/
 *.pyc
+tools/node_modules/
+.build-tools/

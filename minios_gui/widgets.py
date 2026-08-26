@@ -5,7 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
-from .markdown import MarkdownTextView
+from .document import DocumentTextView
 from .style import new_icon, resolve_icon
 
 
@@ -81,7 +81,7 @@ class HelpPopoverButton(Gtk.Button):
 
     def __init__(self, title, summary="", sections=(), label=None,
                  tooltip=None, compact=False, markup=False, width=None,
-                 markdown=None, render_mermaid=False):
+                 document=None, asset_resolver=None):
         Gtk.Button.__init__(self)
         self.set_focus_on_click(False)
         self.get_style_context().add_class("minios-help-button")
@@ -116,17 +116,17 @@ class HelpPopoverButton(Gtk.Button):
             scrolled.set_max_content_height(420)
         if hasattr(scrolled, "set_propagate_natural_height"):
             scrolled.set_propagate_natural_height(True)
-        if markdown is not None:
-            markdown_view = MarkdownTextView(
-                markdown, render_mermaid=render_mermaid)
-            markdown_view.set_left_margin(16)
-            markdown_view.set_right_margin(16)
-            markdown_view.set_top_margin(12)
-            markdown_view.set_bottom_margin(12)
-            markdown_view.set_hexpand(True)
-            markdown_view.set_vexpand(True)
-            scrolled.add(markdown_view)
-            self.markdown_view = markdown_view
+        if document is not None:
+            document_view = DocumentTextView(
+                document, asset_resolver=asset_resolver)
+            document_view.set_left_margin(16)
+            document_view.set_right_margin(16)
+            document_view.set_top_margin(12)
+            document_view.set_bottom_margin(12)
+            document_view.set_hexpand(True)
+            document_view.set_vexpand(True)
+            scrolled.add(document_view)
+            self.document_view = document_view
         else:
             body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
             body.set_margin_top(12)

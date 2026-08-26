@@ -4,7 +4,6 @@ Priority: optional
 Maintainer: crims0n <crims0n@minios.dev>
 Build-Depends: debhelper (>= 11),
                 python3 (>= 3.6),
-                python3-mistune,
                 python3-pytest,
                 python3-gi,
                 gir1.2-gtk-3.0,
@@ -39,7 +38,6 @@ Section: python
 Architecture: all
 Depends: ${misc:Depends},
          python3 (>= 3.6),
-         python3-mistune,
          python3-gi,
          gir1.2-gtk-3.0,
          minios-gui (= ${binary:Version})
@@ -48,7 +46,7 @@ Description: Python 3 helpers for MiniOS GTK applications
  The module provides canonical stylesheet loading, icon-theme resolution,
  standard message and confirmation dialogs, reusable HeaderBar and semantic
  status-banner widgets, compact module-presentation helpers, a read-only
- streamed log view, native Markdown help rendering, background command
+ streamed log view, parser-free compiled document rendering, background command
  execution and a cancellable command dialog.
  .
  This binary package is built from the minios-gui source repository together

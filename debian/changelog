@@ -1,25 +1,26 @@
 minios-gui (1.2.0) unstable; urgency=medium
 
-  * Add native Markdown help rendering with Mistune and Gtk.TextBuffer.
-  * Add safe localized Markdown loading with language and English fallback.
-  * Let HelpPopoverButton display selectable Markdown content without WebKit.
-  * Support the legacy Mistune 0.8 renderer API and the AST APIs in Mistune 2
-    and 3 so the shared widget also works on newer MiniOS releases.
-  * Add reusable internal-link callbacks, Unicode heading anchors and safe
-    handling of br, kbd, strong and em inline HTML used in local help.
-  * Add optional native Mermaid flowchart rendering without WebKit, JavaScript
-    or command execution, with source-code fallback for unsupported syntax.
-  * Render nested Markdown lists on distinct indented lines and safely handle
-    fenced code blocks that omit a language identifier.
-  * Keep popover titles visually above Markdown headings in the help hierarchy.
-  * Treat the level-one Markdown heading as the document title instead of
-    duplicating it with a separate GTK label.
-  * Put Markdown views directly in their scroller to avoid an empty page below
-    the article when the reader reaches the end.
-  * Fix primary-button activation of rendered Markdown links under PyGObject.
+  * Add DocumentTextView for native GTK rendering of precompiled MiniOS markup
+    documents without a Markdown, HTML or JavaScript engine at runtime.
+  * Render compiled headings, lists, code, links and anchors through TextBuffer,
+    and embed responsive native tables plus SVG/image assets through GTK child
+    widgets.
+  * Let HelpPopoverButton display compiled documents through document= while
+    keeping its existing plain-text and Pango-markup help modes.
+  * Remove the unpublished runtime Markdown/Mistune and native Mermaid-subset
+    APIs; Markdown and Mermaid are build-time source formats for applications.
+  * Keep the compiled document renderer compatible with Python 3.6 and GTK 3.22.
+  * Add tests for document schema validation, links, responsive native tables,
+    SVG assets and compiled-document help popovers.
+  * Provide one shared Node.js Markdown/Mermaid compiler with a pinned npm
+    lockfile for applications that prepare compiled help bundles before release.
+  * Highlight fenced code at build time with the same Shiki 2.5.0
+    github-light/github-dark themes used by the current VitePress documentation.
+  * Render code blocks as responsive, selectable content-column widgets and
+    scale compiled Mermaid SVG diagrams to the available document width.
   * Run the complete GTK and CSS test suite under Xvfb during package builds.
 
- -- crims0n <crims0n@minios.dev>  Mon, 24 Aug 2026 15:00:00 +0300
+ -- crims0n <crims0n@minios.dev>  Wed, 26 Aug 2026 00:20:00 +0300
 
 minios-gui (1.1.0) unstable; urgency=medium
 

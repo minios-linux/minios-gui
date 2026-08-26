@@ -67,35 +67,51 @@ class WidgetTests(unittest.TestCase):
             compact=True, markup=True)
         self.assertIsNotNone(button.help_popover)
 
-    def test_help_popover_accepts_markdown(self):
-        button = HelpPopoverButton(
-            "Filesystem", compact=True,
-            markdown="# Filesystem\n\nUse **ext4** or `perchmode=squashfs`.")
+    def test_help_popover_accepts_compiled_document(self):
+        document = {
+            "product_kind": "minios-markup-document",
+            "schema_version": 1,
+            "nodes": [
+                ["heading", 1, "filesystem", [["text", "Filesystem"]]],
+                ["block", "paragraph", [
+                    ["text", "Use "],
+                    ["span", "strong", [["text", "ext4"]]],
+                    ["text", " or "],
+                    ["span", "code", [["text", "perchmode=squashfs"]]],
+                    ["text", "."],
+                ]],
+            ],
+        }
+        button = HelpPopoverButton("Filesystem", compact=True, document=document)
         self.assertIsNotNone(button.help_popover)
-        self.assertIsNotNone(button.markdown_view)
+        self.assertIsNotNone(button.document_view)
         self.assertFalse(hasattr(button, "help_heading"))
-        self.assertIs(button.markdown_view.get_parent(), button.help_scrolled)
-        tags = button.markdown_view.get_buffer().get_tag_table()
-        self.assertGreater(
-            tags.lookup("heading1").props.scale,
-            tags.lookup("heading2").props.scale)
-        self.assertGreater(
-            tags.lookup("heading2").props.scale,
-            tags.lookup("heading3").props.scale)
+        self.assertIs(button.document_view.get_parent(), button.help_scrolled)
+        tags = button.document_view.get_buffer().get_tag_table()
+        self.assertGreater(tags.lookup("heading1").props.scale,
+                           tags.lookup("heading2").props.scale)
 
-    def test_markdown_scroll_range_ends_with_document(self):
+    def test_document_scroll_range_ends_with_document(self):
         window = Gtk.Window()
-        markdown = "# Help\n\n" + "\n\n".join(
-            "Paragraph {} with enough text to wrap onto another line.".format(i)
-            for i in range(40))
-        button = HelpPopoverButton("Help", markdown=markdown)
+        nodes = [["heading", 1, "help", [["text", "Help"]]]]
+        nodes.extend([
+            ["block", "paragraph", [["text",
+                "Paragraph {} with enough text to wrap onto another line.".format(i)]]]
+            for i in range(40)
+        ])
+        document = {
+            "product_kind": "minios-markup-document",
+            "schema_version": 1,
+            "nodes": nodes,
+        }
+        button = HelpPopoverButton("Help", document=document)
         window.add(button)
         window.show_all()
         button.clicked()
         while Gtk.events_pending():
             Gtk.main_iteration_do(False)
 
-        view = button.markdown_view
+        view = button.document_view
         end_rect = view.get_iter_location(view.get_buffer().get_end_iter())
         upper = button.help_scrolled.get_vadjustment().get_upper()
         self.assertLessEqual(upper - end_rect.y - end_rect.height, 32)

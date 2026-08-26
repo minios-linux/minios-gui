@@ -13,9 +13,6 @@ The stylesheet is installed to:
 /usr/share/minios/minios.css
 ```
 
-The design and interaction standard lives in this repository:
-[MiniOS GUI guidelines](doc/minios-gui-guidelines.md).
-
 ## What it provides
 
 `minios.css` is a GTK 3 stylesheet organized into 15 sections: brand tokens,
@@ -56,13 +53,10 @@ The `minios_gui` Python package provides:
   completion, anchored visually to the word being completed; arrows choose a
   result and Tab/Enter accept it while Shift+Tab keeps normal focus navigation;
 - `HelpPopoverButton` for keyboard-accessible contextual help, from compact
-  field explanations to structured page-level guidance with titled sections or
-  native Markdown content;
-- `MarkdownTextView`, `parse_markdown()` and `load_localized_markdown()` for
-  safe native Markdown help without WebKit, including locale fallback, internal
-  link callbacks, heading anchors and a non-executable safe HTML subset;
-- `MermaidDiagram` and `parse_mermaid_flowchart()` for optional native Mermaid
-  flowcharts without JavaScript; unsupported Mermaid remains readable source;
+  field explanations to structured page-level guidance or a precompiled
+  document;
+- `DocumentTextView` for parser-free rendering of precompiled MiniOS markup
+  documents, including native tables, links, anchors and SVG/image assets;
 - `LogView`, `CommandRunner` and `CommandDialog` for responsive, cancellable,
   streamed command execution outside the GTK main loop.
 
@@ -82,30 +76,22 @@ still override or add genuinely app-specific widgets.
 
 An application that only loads the stylesheet depends on `minios-gui`. An app
 that imports `minios_gui` depends on `python3-minios-gui` (which in turn depends
-on the matching `minios-gui` binary version).
+on the matching `minios-gui` binary version). Markdown is an authoring/build
+format, not a runtime API. Applications that ship Markdown help compile it to
+the MiniOS document format before packaging and render it with `DocumentTextView`
+or pass the compiled object to `HelpPopoverButton(document=...)`. Mermaid blocks
+are likewise rendered to static SVG during that build step.
 
-Localized Markdown help uses an application-owned document tree:
+Example runtime use:
 
 ```python
-from minios_gui import HelpPopoverButton, load_localized_markdown
+import json
+from minios_gui import HelpPopoverButton
 
-help_text = load_localized_markdown(
-    "/usr/share/example-app/help", "settings/storage.md")
-help_button = HelpPopoverButton(
-    "Storage", markdown=help_text, compact=True)
+with open("/usr/share/example-app/help/storage.json", encoding="utf-8") as stream:
+    document = json.load(stream)
+help_button = HelpPopoverButton("Storage", document=document, compact=True)
 ```
-
-The Markdown document should begin with its own level-one heading. The `title`
-argument remains the button's accessible name and fallback tooltip; it is not
-duplicated above Markdown content.
-
-The loader tries `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, and `LANG` in order, then
-falls back from a full locale to its language and finally to English. Use
-`MarkdownTextView` directly when help belongs in a dialog or permanent page
-instead of a popover. Applications that need diagrams can pass
-`render_mermaid=True` to `MarkdownTextView` or `HelpPopoverButton`. The Mermaid
-renderer executes no script or HTML; it supports native flowcharts and falls
-back to the fenced source when syntax is unsupported.
 
 ## Build
 
@@ -124,11 +110,27 @@ make install DESTDIR=/path/to/root
 The build produces `minios-gui_<version>_all.deb` and
 `python3-minios-gui_<version>_all.deb`.
 
+### Shared documentation compiler
+
+Applications that author help in Markdown use the shared build-only compiler in
+`tools/`. Install its pinned npm dependencies locally with:
+
+```sh
+tools/npm-ci.sh
+```
+
+`tools/markdown-compiler.mjs` converts Markdown batches into the parser-free
+MiniOS document format. Fenced code is tokenized at build time by Shiki 2.5.0
+with the same `github-light` / `github-dark` themes used by the current VitePress
+documentation, and Mermaid fences are rendered to sanitized static SVG. The
+Node/npm/Puppeteer toolchain is not installed by the Debian binary packages;
+applications commit their generated JSON/SVG bundles and only need
+`DocumentTextView` at runtime.
+
 ## Compatibility
 
 - Python 3.6 and later;
 - GTK 3.22 and later;
-- Mistune 0.8, 2.x, and 3.x;
 - Debian 10–13 and later, equivalent Devuan releases, Ubuntu 18.04–26.04 and
   later.
 
