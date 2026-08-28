@@ -171,6 +171,7 @@ class MermaidRenderer {
       fs.writeFileSync(sourcePath, source, "utf8");
       fs.writeFileSync(configPath, JSON.stringify({
         securityLevel: "strict", htmlLabels: false,
+        handDrawnSeed: 1,
         flowchart: { htmlLabels: false },
       }), "utf8");
       const puppeteerCache = process.env.PUPPETEER_CACHE_DIR
