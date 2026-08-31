@@ -20,7 +20,7 @@ from .style import (
 )
 from .widgets import HelpPopoverButton, StatusBanner, new_header_bar
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 __all__ = (
     "SHARED_CSS_PATH",

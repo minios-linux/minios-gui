@@ -407,9 +407,11 @@ button.destructive-action,
 
 .row-title { font-weight: 600; }
 
+/* Base surface for every precompiled document. Applications should not
+ * restyle DocumentTextView or its former-Markdown elements themselves. */
 .minios-document-view,
 .minios-document-view text {
-    background-color: transparent;
+    background-color: @theme_base_color;
 }
 .row-subtitle,
 .row-meta { opacity: 0.6; font-size: smaller; }
@@ -509,4 +511,113 @@ progressbar progress {
 .minios-document-code-block-dark {
     background-color: #161618;
     border-radius: 8px;
+}
+
+.minios-code-copy-button {
+    min-width: 24px;
+    min-height: 24px;
+    padding: 2px;
+    border-radius: 4px;
+    background-color: alpha(@theme_bg_color, 0.82);
+}
+
+.minios-code-copy-button:hover {
+    background-color: @theme_bg_color;
+}
+
+.minios-code-copy-success,
+.minios-code-copy-success image {
+    color: @minios_green;
+}
+
+/* Precompiled Markdown tables use the same rounded, quiet surface language as
+ * code blocks, with clearer header emphasis and restrained cell separators. */
+.minios-document-table {
+    border: 1px solid alpha(@borders, 0.60);
+    border-radius: 8px;
+}
+
+.minios-document-table-light {
+    background-color: #f6f6f7;
+}
+
+.minios-document-table-dark {
+    background-color: #161618;
+}
+
+.minios-table-cell {
+    padding: 7px 10px;
+    border-right: 1px solid alpha(@borders, 0.35);
+    border-bottom: 1px solid alpha(@borders, 0.35);
+}
+
+.minios-table-last-column {
+    border-right: none;
+}
+
+.minios-table-last-row {
+    border-bottom: none;
+}
+
+.minios-table-header {
+    font-weight: 600;
+    background-color: alpha(@theme_fg_color, 0.06);
+}
+
+.minios-table-header.minios-table-first-column {
+    border-top-left-radius: 7px;
+}
+
+.minios-table-header.minios-table-last-column {
+    border-top-right-radius: 7px;
+}
+
+/* Native Markdown/VitePress notice blocks. Keep these compact: an icon and
+ * strong title sit above body text aligned with the title, while a coloured
+ * left edge communicates severity without turning the notice into a large
+ * filled panel. */
+.minios-document-admonition {
+    margin-top: 6px;
+    margin-bottom: 10px;
+    padding: 9px 12px;
+    border-style: solid;
+    border-width: 1px 1px 1px 4px;
+    border-radius: 6px;
+}
+
+.minios-document-admonition-title {
+    font-weight: bold;
+}
+
+.minios-document-admonition-warning image {
+    color: @minios_amber;
+}
+
+.minios-document-admonition-danger image {
+    color: @minios_red;
+}
+
+.minios-document-admonition-body,
+.minios-document-admonition-body text {
+    background-color: transparent;
+}
+
+.minios-document-admonition-info {
+    background-color: alpha(@minios_blue, 0.08);
+    border-color: alpha(@minios_blue, 0.48);
+}
+
+.minios-document-admonition-success {
+    background-color: alpha(@minios_green, 0.08);
+    border-color: alpha(@minios_green, 0.48);
+}
+
+.minios-document-admonition-warning {
+    background-color: alpha(@minios_amber, 0.10);
+    border-color: alpha(@minios_amber, 0.58);
+}
+
+.minios-document-admonition-danger {
+    background-color: alpha(@minios_red, 0.08);
+    border-color: alpha(@minios_red, 0.55);
 }

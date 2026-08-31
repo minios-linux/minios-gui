@@ -119,6 +119,19 @@ class _DocumentTable(Gtk.Grid):
     def __init__(self, owner):
         Gtk.Grid.__init__(self)
         self._owner = owner
+        self._dark = self._is_dark()
+        self.get_style_context().add_class("minios-document-table")
+        self.get_style_context().add_class(
+            "minios-document-table-dark" if self._dark
+            else "minios-document-table-light")
+
+    def _is_dark(self):
+        found, base = self._owner.get_style_context().lookup_color(
+            "theme_base_color")
+        if not found:
+            return False
+        return (base.red * 0.2126 + base.green * 0.7152 +
+                base.blue * 0.0722) < 0.5
 
     def _target_width(self):
         width = self._owner.get_allocated_width()
@@ -151,22 +164,77 @@ class _DocumentCodeBlock(Gtk.Box):
     def __init__(self, owner, source, tokens):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self._owner = owner
+        self._source = str(source or "")
+        self._copy_feedback_source = 0
         self._dark = self._is_dark()
         self.get_style_context().add_class(
             "minios-document-code-block-dark" if self._dark
             else "minios-document-code-block-light")
+
+        overlay = Gtk.Overlay()
         self._label = Gtk.Label(xalign=0, yalign=0)
         self._label.set_use_markup(True)
-        self._label.set_selectable(True)
+        # Code is copied with the dedicated button. Keeping the label
+        # selectable makes GTK draw an I-beam/caret inside a read-only help
+        # page, which looks like an editable field.
+        self._label.set_selectable(False)
         self._label.set_line_wrap(True)
         self._label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
         self._label.set_margin_start(12)
-        self._label.set_margin_end(12)
+        self._label.set_margin_end(44)
         self._label.set_margin_top(10)
         self._label.set_margin_bottom(10)
-        self._label.set_markup(self._markup(str(source or ""), tokens or []))
-        self.pack_start(self._label, True, True, 0)
-        self._label.show()
+        self._label.set_markup(self._markup(self._source, tokens or []))
+        overlay.add(self._label)
+
+        self._copy_button = Gtk.Button()
+        self._copy_button.set_relief(Gtk.ReliefStyle.NONE)
+        self._copy_button.set_focus_on_click(False)
+        self._copy_button.set_halign(Gtk.Align.END)
+        self._copy_button.set_valign(Gtk.Align.START)
+        self._copy_button.set_margin_top(5)
+        self._copy_button.set_margin_end(5)
+        self._copy_button.get_style_context().add_class("minios-code-copy-button")
+        self._copy_button.set_image(Gtk.Image.new_from_icon_name(
+            "edit-copy-symbolic", Gtk.IconSize.MENU))
+        accessible = self._copy_button.get_accessible()
+        if accessible is not None:
+            accessible.set_name("Copy code")
+        self._copy_button.connect("clicked", self._copy_to_clipboard)
+        self.connect("destroy", self._on_destroy)
+        overlay.add_overlay(self._copy_button)
+
+        self.pack_start(overlay, True, True, 0)
+        overlay.show_all()
+
+    def _set_copy_icon(self, icon_name):
+        self._copy_button.set_image(Gtk.Image.new_from_icon_name(
+            icon_name, Gtk.IconSize.MENU))
+        self._copy_button.get_image().show()
+
+    def _copy_to_clipboard(self, _button=None):
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        clipboard.set_text(self._source, -1)
+        clipboard.store()
+        if self._copy_feedback_source:
+            GLib.source_remove(self._copy_feedback_source)
+        self._set_copy_icon("emblem-ok-symbolic")
+        self._copy_button.get_style_context().add_class(
+            "minios-code-copy-success")
+        self._copy_feedback_source = GLib.timeout_add(
+            1200, self._reset_copy_feedback)
+
+    def _reset_copy_feedback(self):
+        self._copy_feedback_source = 0
+        self._set_copy_icon("edit-copy-symbolic")
+        self._copy_button.get_style_context().remove_class(
+            "minios-code-copy-success")
+        return False
+
+    def _on_destroy(self, _widget=None):
+        if self._copy_feedback_source:
+            GLib.source_remove(self._copy_feedback_source)
+            self._copy_feedback_source = 0
 
     def _is_dark(self):
         found, base = self._owner.get_style_context().lookup_color(
@@ -227,6 +295,104 @@ class _DocumentCodeBlock(Gtk.Box):
         Gtk.Box.do_size_allocate(self, adjusted)
 
 
+class _DocumentAdmonition(Gtk.Box):
+    """Semantic notice block sized to the document content column."""
+
+    _STYLE_CLASSES = {
+        "note": "minios-document-admonition-info",
+        "info": "minios-document-admonition-info",
+        "tip": "minios-document-admonition-success",
+        "success": "minios-document-admonition-success",
+        "warning": "minios-document-admonition-warning",
+        "caution": "minios-document-admonition-warning",
+        "danger": "minios-document-admonition-danger",
+        "error": "minios-document-admonition-danger",
+    }
+    _ICONS = {
+        "note": "dialog-information-symbolic",
+        "info": "dialog-information-symbolic",
+        "tip": "emblem-default-symbolic",
+        "success": "emblem-default-symbolic",
+        "warning": "dialog-warning-symbolic",
+        "caution": "dialog-warning-symbolic",
+        "danger": "dialog-error-symbolic",
+        "error": "dialog-error-symbolic",
+    }
+
+    def __init__(self, owner, kind, title, nodes):
+        Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self._owner = owner
+        self.kind = str(kind or "note").lower()
+        self.get_style_context().add_class("minios-document-admonition")
+        self.get_style_context().add_class(
+            self._STYLE_CLASSES.get(
+                self.kind, "minios-document-admonition-info"))
+
+        heading = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        icon = Gtk.Image.new_from_icon_name(
+            self._ICONS.get(self.kind, "dialog-information-symbolic"),
+            Gtk.IconSize.MENU)
+        label = Gtk.Label(label=str(title or self.kind.title()), xalign=0)
+        label.set_line_wrap(True)
+        label.get_style_context().add_class("minios-document-admonition-title")
+        heading.pack_start(icon, False, False, 0)
+        heading.pack_start(label, True, True, 0)
+        self.pack_start(heading, False, False, 0)
+
+        self.body = DocumentTextView({
+            "product_kind": DOCUMENT_KIND,
+            "schema_version": DOCUMENT_SCHEMA_VERSION,
+            "nodes": nodes or [],
+        }, link_handler=owner.link_handler, asset_resolver=owner.asset_resolver)
+        self.body.set_left_margin(22)
+        self.body.set_right_margin(0)
+        self.body.set_top_margin(0)
+        self.body.set_bottom_margin(0)
+        self.body.set_hexpand(True)
+        self.body.get_style_context().add_class("minios-document-admonition-body")
+        # Paragraph rendering deliberately adds spacing between top-level
+        # blocks. At the end of a compact notice that becomes dead space, so
+        # trim it when there are no embedded child widgets to preserve.
+        if not self.body._embedded_widgets:
+            buffer_ = self.body.get_buffer()
+            text = buffer_.get_text(
+                buffer_.get_start_iter(), buffer_.get_end_iter(), True)
+            trimmed = text.rstrip()
+            if len(trimmed) != len(text):
+                buffer_.delete(
+                    buffer_.get_iter_at_offset(len(trimmed)),
+                    buffer_.get_end_iter())
+        self.pack_start(self.body, True, True, 0)
+        self.show_all()
+
+    def _target_width(self):
+        width = self._owner.get_allocated_width()
+        if width <= 1:
+            return 32
+        return max(
+            32, width - self._owner.get_left_margin() -
+            self._owner.get_right_margin() - 2)
+
+    def do_get_preferred_width(self):
+        return (1, 1)
+
+    def do_get_preferred_height(self):
+        return Gtk.Box.do_get_preferred_height_for_width(
+            self, self._target_width())
+
+    def do_get_preferred_height_for_width(self, _width):
+        return Gtk.Box.do_get_preferred_height_for_width(
+            self, self._target_width())
+
+    def do_size_allocate(self, allocation):
+        adjusted = Gdk.Rectangle()
+        adjusted.x = allocation.x
+        adjusted.y = allocation.y
+        adjusted.width = self._target_width()
+        adjusted.height = allocation.height
+        Gtk.Box.do_size_allocate(self, adjusted)
+
+
 class _DocumentAssetImage(Gtk.Image):
     """Image that rerenders vector assets at the document column width."""
 
@@ -240,6 +406,10 @@ class _DocumentAssetImage(Gtk.Image):
         self._source_width = max(1, probe.get_width())
         self.set_halign(Gtk.Align.START)
         self.set_tooltip_text(alt or None)
+        if self._expand:
+            self.get_style_context().add_class("minios-document-diagram")
+            self.set_margin_top(10)
+            self.set_margin_bottom(14)
         self.update_width()
 
     def _content_width(self):
@@ -275,13 +445,15 @@ class DocumentTextView(Gtk.TextView):
         self._embedded_widgets = []
         self._table_widgets = []
         self._code_widgets = []
+        self._admonition_widgets = []
         self._asset_widgets = []
         self._anchors = {}
         self._headings = []
         self._link_cursor = None
         self._text_cursor = None
+        self._hover_link_tag = None
         self.set_editable(False)
-        self.set_cursor_visible(True)
+        self.set_cursor_visible(False)
         self.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.set_left_margin(4)
         self.set_right_margin(4)
@@ -325,13 +497,26 @@ class DocumentTextView(Gtk.TextView):
         buffer_.create_tag("strong", weight=Pango.Weight.BOLD)
         buffer_.create_tag("emphasis", style=Pango.Style.ITALIC)
         buffer_.create_tag("strikethrough", strikethrough=True)
-        buffer_.create_tag("code", family="monospace")
+        found, base = self.get_style_context().lookup_color("theme_base_color")
+        dark = bool(found and (
+            base.red * 0.2126 + base.green * 0.7152 +
+            base.blue * 0.0722) < 0.5)
+        accent = "#a8b1ff" if dark else "#3451b2"
+        code_background = "#242426" if dark else "#f6f6f7"
+        # Inline code must remain part of the TextView's Pango layout so it
+        # shares the exact text baseline. A child widget here sits on the
+        # object-replacement glyph box and appears a few pixels too high.
+        buffer_.create_tag(
+            "code", family="monospace", scale=0.9, foreground=accent,
+            background=code_background)
         buffer_.create_tag(
             "quote", style=Pango.Style.ITALIC, left_margin=18,
             right_margin=8)
-        buffer_.create_tag("link", underline=Pango.Underline.SINGLE)
+        buffer_.create_tag(
+            "link", foreground=accent, underline=Pango.Underline.NONE)
 
     def _reset_content(self):
+        self._set_hover_link(None)
         for widget in self._embedded_widgets:
             try:
                 widget.destroy()
@@ -340,6 +525,7 @@ class DocumentTextView(Gtk.TextView):
         self._embedded_widgets = []
         self._table_widgets = []
         self._code_widgets = []
+        self._admonition_widgets = []
         self._asset_widgets = []
         self.get_buffer().set_text("")
         self._link_uris = {}
@@ -360,21 +546,53 @@ class DocumentTextView(Gtk.TextView):
     def get_headings(self):
         return list(self._headings)
 
-    def scroll_to_anchor(self, anchor):
-        if not anchor:
-            buffer_ = self.get_buffer()
-            buffer_.place_cursor(buffer_.get_start_iter())
-            self.scroll_mark_onscreen(buffer_.get_insert())
-            return True
-        name = unquote(str(anchor)).lstrip("#").strip().lower()
-        mark = self._anchors.get(name)
-        if mark is None:
-            mark = self._anchors.get(self._anchor_match_key(name))
-        if mark is None:
-            return False
+    def heading_at_y(self, y, min_level=1, max_level=6):
+        """Return the last heading at or above a document y coordinate."""
+        result = self.get_line_at_y(max(0, int(y)))
+        iter_ = result[0]
+        target = iter_.get_offset()
+        current = None
         buffer_ = self.get_buffer()
-        buffer_.place_cursor(buffer_.get_iter_at_mark(mark))
-        self.scroll_to_mark(mark, 0.08, True, 0.0, 0.0)
+        for level, title, anchor in self._headings:
+            if level < min_level or level > max_level:
+                continue
+            mark = self._anchors.get(str(anchor or "").lower())
+            if mark is None:
+                continue
+            if buffer_.get_iter_at_mark(mark).get_offset() > target:
+                break
+            current = (level, title, anchor)
+        return current
+
+    def scroll_to_anchor(self, anchor):
+        buffer_ = self.get_buffer()
+        if not anchor:
+            iter_ = buffer_.get_start_iter()
+        else:
+            name = unquote(str(anchor)).lstrip("#").strip().lower()
+            mark = self._anchors.get(name)
+            if mark is None:
+                mark = self._anchors.get(self._anchor_match_key(name))
+            if mark is None:
+                return False
+            iter_ = buffer_.get_iter_at_mark(mark)
+
+        buffer_.place_cursor(iter_)
+        parent = self.get_parent()
+        while parent is not None and not isinstance(parent, Gtk.ScrolledWindow):
+            parent = parent.get_parent()
+        adjustment = parent.get_vadjustment() if parent is not None else None
+        if adjustment is None:
+            self.scroll_to_iter(iter_, 0.0, True, 0.0, 0.0)
+            return True
+
+        location = self.get_iter_location(iter_)
+        target = float(location.y - self.get_top_margin() - 4)
+        maximum = max(
+            adjustment.get_lower(),
+            adjustment.get_upper() - adjustment.get_page_size())
+        adjustment.set_value(max(
+            adjustment.get_lower(), min(target, maximum)))
         return True
 
     def _tag(self, name):
@@ -435,7 +653,11 @@ class DocumentTextView(Gtk.TextView):
             if kind == "text":
                 self._insert(node[1], tag_names)
             elif kind == "span":
-                self._render_nodes(node[2], tag_names + (node[1],), list_depth)
+                if node[1] == "code":
+                    self._render_inline_code(node[2], tag_names, list_depth)
+                else:
+                    self._render_nodes(
+                        node[2], tag_names + (node[1],), list_depth)
             elif kind == "block":
                 self._render_nodes(node[2], tag_names + (node[1],), list_depth)
                 self._insert("\n\n")
@@ -455,6 +677,14 @@ class DocumentTextView(Gtk.TextView):
             elif kind == "table":
                 self._render_table(node[1], tag_names, list_depth)
 
+    def _render_inline_code(self, nodes, tag_names, list_depth):
+        # Thin spaces reproduce the small horizontal breathing room of the
+        # VitePress pill without leaving Pango text flow or changing baseline.
+        tags = tag_names + ("code",)
+        self._insert("\u2009", tags)
+        self._render_nodes(nodes, tags, list_depth)
+        self._insert("\u2009", tags)
+
     def _render_code_block(self, node, _tag_names):
         source = str(node[1] or "")
         tokens = node[3] if len(node) > 3 and isinstance(node[3], list) else []
@@ -470,15 +700,20 @@ class DocumentTextView(Gtk.TextView):
         block.show()
         self._insert("\n\n")
 
-    def _render_admonition(self, node, tag_names, list_depth):
-        kind = str(node[1] or "note").upper()
+    def _render_admonition(self, node, _tag_names, _list_depth):
+        kind = str(node[1] or "note").lower()
         title = node[2] or kind.title()
-        self._insert(title + "\n", tag_names + ("strong", "quote"))
-        self._render_nodes(node[3], tag_names + ("quote",), list_depth)
         end = self.get_buffer().get_end_iter()
         if not end.starts_line():
             self._insert("\n")
-        self._insert("\n")
+        block = _DocumentAdmonition(self, kind, title, node[3])
+        anchor = self.get_buffer().create_child_anchor(
+            self.get_buffer().get_end_iter())
+        self.add_child_at_anchor(block, anchor)
+        self._embedded_widgets.append(block)
+        self._admonition_widgets.append(block)
+        block.show_all()
+        self._insert("\n\n")
 
     def _render_asset(self, node):
         relative = node[1] if len(node) > 1 else ""
@@ -529,14 +764,12 @@ class DocumentTextView(Gtk.TextView):
 
     def _render_table(self, rows, _tag_names, _list_depth):
         grid = _DocumentTable(self)
-        grid.set_row_spacing(1)
-        grid.set_column_spacing(1)
+        grid.set_row_spacing(0)
+        grid.set_column_spacing(0)
         grid.set_halign(Gtk.Align.FILL)
         grid.set_hexpand(True)
-        grid.get_style_context().add_class("minios-document-table")
-        for row_index, row in enumerate(rows):
-            if row[0] != "table_row":
-                continue
+        valid_rows = [row for row in rows if row and row[0] == "table_row"]
+        for row_index, row in enumerate(valid_rows):
             header = bool(row[1]) if len(row) > 2 else row_index == 0
             cells = row[2] if len(row) > 2 else row[1]
             for column, cell in enumerate(cells):
@@ -548,13 +781,19 @@ class DocumentTextView(Gtk.TextView):
                 label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
                 label.set_hexpand(True)
                 label.set_halign(Gtk.Align.FILL)
-                label.set_selectable(True)
-                label.set_margin_start(6)
-                label.set_margin_end(6)
-                label.set_margin_top(4)
-                label.set_margin_bottom(4)
+                label.set_selectable(False)
+                context = label.get_style_context()
+                context.add_class("minios-table-cell")
                 if header:
-                    label.get_style_context().add_class("minios-table-header")
+                    context.add_class("minios-table-header")
+                if row_index == 0:
+                    context.add_class("minios-table-first-row")
+                if row_index == len(valid_rows) - 1:
+                    context.add_class("minios-table-last-row")
+                if column == 0:
+                    context.add_class("minios-table-first-column")
+                if column == len(cells) - 1:
+                    context.add_class("minios-table-last-column")
                 label.connect("activate-link", self._on_table_link)
                 grid.attach(label, column, row_index, 1, 1)
         anchor = self.get_buffer().create_child_anchor(
@@ -569,6 +808,8 @@ class DocumentTextView(Gtk.TextView):
         for grid in self._table_widgets:
             grid.queue_resize()
         for block in self._code_widgets:
+            block.queue_resize()
+        for block in self._admonition_widgets:
             block.queue_resize()
         for image in self._asset_widgets:
             image.update_width()
@@ -624,7 +865,7 @@ class DocumentTextView(Gtk.TextView):
         self._render_nodes(node[3], tag_names + ("link",), list_depth)
         begin_iter = buffer_.get_iter_at_offset(start)
         end_iter = buffer_.get_end_iter()
-        link_tag = buffer_.create_tag(None, underline=Pango.Underline.SINGLE)
+        link_tag = buffer_.create_tag(None, underline=Pango.Underline.NONE)
         self._link_uris[link_tag] = uri
         link_tag.connect("event", self._on_link_event, uri)
         buffer_.apply_tag(link_tag, begin_iter, end_iter)
@@ -663,35 +904,38 @@ class DocumentTextView(Gtk.TextView):
                 values.append(DocumentTextView._plain_text(node[3]))
         return "".join(values).strip()
 
-    def _link_uri_at_iter(self, iter_):
+    def _link_tag_at_iter(self, iter_):
         for tag in iter_.get_tags():
             uri = self._link_uris.get(tag)
             if uri:
-                return uri
-        return None
+                return tag, uri
+        return None, None
 
-    def _link_uri_at_event(self, event):
+    def _link_uri_at_iter(self, iter_):
+        return self._link_tag_at_iter(iter_)[1]
+
+    def _link_tag_at_event(self, event):
         event_window = getattr(event, "window", None)
         if event_window is None:
-            return None
+            return None, None
         window_type = self.get_window_type(event_window)
         if window_type not in (Gtk.TextWindowType.TEXT, Gtk.TextWindowType.WIDGET):
-            return None
+            return None, None
         coords = event.get_coords()
         if not coords:
-            return None
+            return None, None
         if len(coords) == 2:
             x, y = coords
         else:
             has_coords, x, y = coords
             if not has_coords:
-                return None
+                return None, None
         buffer_x, buffer_y = self.window_to_buffer_coords(
             window_type, int(x), int(y))
         found, iter_ = self.get_iter_at_location(buffer_x, buffer_y)
         if not found:
-            return None
-        return self._link_uri_at_iter(iter_)
+            return None, None
+        return self._link_tag_at_iter(iter_)
 
     def _set_link_pointer(self, active):
         window = self.get_window(Gtk.TextWindowType.TEXT)
@@ -706,12 +950,25 @@ class DocumentTextView(Gtk.TextView):
                 display, Gdk.CursorType.XTERM)
         window.set_cursor(self._link_cursor if active else self._text_cursor)
 
+    def _set_hover_link(self, tag):
+        if self._hover_link_tag is tag:
+            return
+        if self._hover_link_tag is not None:
+            self._hover_link_tag.set_property(
+                "underline", Pango.Underline.NONE)
+        self._hover_link_tag = tag
+        if tag is not None:
+            tag.set_property("underline", Pango.Underline.SINGLE)
+
     def _on_motion_notify(self, _view, event):
-        self._set_link_pointer(self._link_uri_at_event(event) is not None)
+        tag, uri = self._link_tag_at_event(event)
+        self._set_link_pointer(uri is not None)
+        self._set_hover_link(tag)
         return False
 
     def _on_leave_notify(self, _view, _event):
         self._set_link_pointer(False)
+        self._set_hover_link(None)
         return False
 
     def _on_link_event(self, _tag, _object, event, _iter, uri):

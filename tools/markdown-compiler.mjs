@@ -35,6 +35,45 @@ function normalizeLanguageName(info) {
   return LANGUAGE_ALIASES.has(language) ? LANGUAGE_ALIASES.get(language) : language;
 }
 
+function normalizeVitePressAdmonitions(source) {
+  const lines = String(source || "").split("\n");
+  const output = [];
+  const containers = [];
+  let fence = null;
+
+  for (const line of lines) {
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      if (!fence) fence = marker[0];
+      else if (marker[0] === fence) fence = null;
+      output.push("    ".repeat(containers.length) + line);
+      continue;
+    }
+
+    if (!fence) {
+      const opening = line.match(/^\s*:::\s+(note|tip|info|warning|danger|success)(?:\s+(.*?))?\s*$/i);
+      if (opening) {
+        const kind = opening[1].toLowerCase();
+        const title = String(opening[2] || "").trim();
+        const escaped = title.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        output.push("    ".repeat(containers.length) +
+          `!!! ${kind}${escaped ? ` "${escaped}"` : ""}`);
+        containers.push(kind);
+        continue;
+      }
+      if (/^\s*:::\s*$/.test(line) && containers.length) {
+        containers.pop();
+        continue;
+      }
+    }
+
+    output.push("    ".repeat(containers.length) + line);
+  }
+
+  return output.join("\n");
+}
+
 function batchHighlightLanguages(items) {
   const languages = new Set();
   const fence = /^\s*(?:```|~~~)\s*([^\s`~]*)/gm;
@@ -144,6 +183,15 @@ class AssetStore {
 
 function sanitizeMermaidSvg(data) {
   let text = data.toString("utf8");
+  // Mermaid emits labels as adjacent <tspan> elements and often puts the
+  // separator at the start of the following tspan. librsvg follows SVG's
+  // default whitespace collapsing rules more strictly than Chromium and can
+  // therefore render "Bootstrap Failed?" as "BootstrapFailed?". Preserve
+  // whitespace for text labels in the compiled SVG itself so browser and GTK
+  // rendering agree.
+  text = text.replace(
+    /<text\b(?![^>]*\bxml:space=)([^>]*)>/gi,
+    '<text xml:space="preserve"$1>');
   text = text.replace(/(<style\b[^>]*>)(.*?)(<\/style>)/gis, (_all, start, css, end) => {
     css = css.replace(/@keyframes[^{}]*\{(?:[^{}]*\{[^{}]*\}[^{}]*)*\}/g, "");
     css = css.replace(/filter\s*:\s*drop-shadow\([^;{}]*\)\s*;?/gi, "");
@@ -220,7 +268,8 @@ class MarkdownCompiler {
   compile(text, sourcePath) {
     this.slugCounts.clear();
     this.headings = [];
-    const tree = tokenTree(this.parser.parse(text || "", {}));
+    const normalized = normalizeVitePressAdmonitions(text || "");
+    const tree = tokenTree(this.parser.parse(normalized, {}));
     const nodes = this.compileBlocks(tree.children, path.resolve(sourcePath));
     return {
       product_kind: DOCUMENT_KIND,

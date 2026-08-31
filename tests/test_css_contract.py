@@ -43,3 +43,52 @@ def test_manager_state_edges_use_shared_semantic_tokens():
         "3px solid @minios_amber")
     assert css_declarations(".row-status-available")["border-left"] == (
         "3px solid alpha(@theme_fg_color, 0.25)")
+
+
+def test_document_renderer_owns_base_surface_and_nested_notice_transparency():
+    base = css_declarations(
+        ".minios-document-view,\n.minios-document-view text")
+    assert base["background-color"] == "@theme_base_color"
+    body = css_declarations(
+        ".minios-document-admonition-body,\n.minios-document-admonition-body text")
+    assert body["background-color"] == "transparent"
+
+
+def test_document_code_copy_button_is_compact():
+    declarations = css_declarations(".minios-code-copy-button")
+    assert declarations["min-width"] == "24px"
+    assert declarations["min-height"] == "24px"
+    assert declarations["border-radius"] == "4px"
+    assert "@minios_green" in css_declarations(
+        ".minios-code-copy-success,\n.minios-code-copy-success image")["color"]
+
+
+def test_document_tables_match_code_block_surface_language():
+    declarations = css_declarations(".minios-document-table")
+    assert declarations["border-radius"] == "8px"
+    assert declarations["border"] == "1px solid alpha(@borders, 0.60)"
+    assert css_declarations(
+        ".minios-document-table-light")["background-color"] == "#f6f6f7"
+    assert css_declarations(
+        ".minios-document-table-dark")["background-color"] == "#161618"
+    cell = css_declarations(".minios-table-cell")
+    assert cell["padding"] == "7px 10px"
+    assert cell["border-right"] == "1px solid alpha(@borders, 0.35)"
+    assert cell["border-bottom"] == "1px solid alpha(@borders, 0.35)"
+
+
+def test_document_admonitions_are_compact_framed_notices():
+    declarations = css_declarations(".minios-document-admonition")
+    assert declarations["margin-top"] == "6px"
+    assert declarations["margin-bottom"] == "10px"
+    assert declarations["padding"] == "9px 12px"
+    assert declarations["border-width"] == "1px 1px 1px 4px"
+    assert declarations["border-radius"] == "6px"
+    assert css_declarations(
+        ".minios-document-admonition-title")["font-weight"] == "bold"
+    assert css_declarations(
+        ".minios-document-admonition-warning")["background-color"] == (
+            "alpha(@minios_amber, 0.10)")
+    assert css_declarations(
+        ".minios-document-admonition-danger")["background-color"] == (
+            "alpha(@minios_red, 0.08)")
